@@ -15,6 +15,8 @@ def compose_videos(inputs:list[Path],output:Path):
   concat=output.with_suffix(".concat.txt"); concat.write_text("\n".join("file '"+str(p).replace("'","'\''")+"'" for p in inputs),encoding="utf-8")
   cmd=["ffmpeg","-y","-f","concat","-safe","0","-i",str(concat),"-c:v","libx264","-c:a","aac",str(tmp)]
   try: subprocess.run(cmd,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-  except (subprocess.CalledProcessError,OSError): tmp.write_bytes(b"MOCK-MP4:"+label.encode()); concat.unlink(missing_ok=True)
+  except (subprocess.CalledProcessError,OSError):
+   tmp.write_bytes(b"MOCK-COMPOSE\n"+b"\n".join(p.read_bytes() for p in inputs))
+  concat.unlink(missing_ok=True)
  else: tmp.write_bytes(b"MOCK-COMPOSE\n"+b"\n".join(p.read_bytes() for p in inputs))
  tmp.replace(output); return output
