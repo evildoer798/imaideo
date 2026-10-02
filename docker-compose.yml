@@ -1,0 +1,46 @@
+services:
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/shortdrama
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_ROOT: /app/storage
+      SKILL_ROOT: /app/third_party/manju-laoli-skill/short-drama-director
+    ports: ["8000:8000"]
+    volumes: ["storage:/app/storage"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+  worker:
+    build: .
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/shortdrama
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_ROOT: /app/storage
+      SKILL_ROOT: /app/third_party/manju-laoli-skill/short-drama-director
+    volumes: ["storage:/app/storage"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+  postgres:
+    image: postgres:17
+    environment: {POSTGRES_DB: shortdrama, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: {test: ["CMD-SHELL","pg_isready -U postgres -d shortdrama"],interval: 5s,timeout: 5s,retries: 10}
+  redis:
+    image: redis:7.4
+    healthcheck: {test: ["CMD","redis-cli","ping"],interval: 5s,timeout: 3s,retries: 10}
+  frontend:
+    image: node:22.12-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    volumes: ["./frontend:/app"]
+    ports: ["5173:5173"]
+    depends_on: [api]
+volumes: {storage: {}, pgdata: {}}

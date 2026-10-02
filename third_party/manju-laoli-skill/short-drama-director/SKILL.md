@@ -1,0 +1,1 @@
+# Offline compatibility Skill\nUse locked assets, structured JSON storyboards, continuity, camera and quality gates.\n

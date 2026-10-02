@@ -1,0 +1,3 @@
+from typing import Protocol
+class ImageProvider(Protocol):
+ async def create_image(self,prompt,path): ...
